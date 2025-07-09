@@ -16,9 +16,11 @@ import {
   Eye,
 } from "lucide-react";
 import Header from "@/components/Header";
+import { useNavigate } from "react-router-dom";
 
 export const College = () => {
   const [activeTab, setActiveTab] = useState("infrastructure");
+  const navigate = useNavigate();
 
   const benefits = [
     {
@@ -197,6 +199,10 @@ export const College = () => {
 
   const activeFeature = features.find((f) => f.id === activeTab);
 
+  const handleClick = () => {
+    navigate("/college/evaluation");
+  };
+
   return (
     <div className="min-h-screen bg-white">
       {/* Hero Section */}
@@ -217,7 +223,10 @@ export const College = () => {
               improvement.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <button className="px-8 py-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-300 flex items-center justify-center space-x-2 transform hover:scale-105">
+              <button
+                className="px-8 py-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-300 flex items-center justify-center space-x-2 transform hover:scale-105"
+                onClick={handleClick}
+              >
                 <span className="font-semibold">Start Free Evaluation</span>
                 <ArrowRight size={20} />
               </button>
