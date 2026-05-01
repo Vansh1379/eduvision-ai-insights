@@ -1,0 +1,337 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User model - synced with Clerk
+model User {
+  id            String   @id @default(uuid())
+  clerkId       String   @unique
+  email         String   @unique
+  firstName     String?
+  lastName      String?
+  role          UserRole @default(STUDENT)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  student       Student?
+  teacher       Teacher?
+  college       College?
+  aiChats       AIChat[]
+
+  @@map("users")
+}
+
+enum UserRole {
+  STUDENT
+  TEACHER
+  ADMIN
+  COLLEGE_ADMIN
+}
+
+// Student Profile
+model Student {
+  id            String   @id @default(uuid())
+  userId        String   @unique
+  studentId     String?  @unique
+  enrollmentYear Int?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  enrollments   Enrollment[]
+  assignments   AssignmentSubmission[]
+  attendance    Attendance[]
+  feedback      Feedback[]
+
+  @@map("students")
+}
+
+// Teacher Profile
+model Teacher {
+  id            String   @id @default(uuid())
+  userId        String   @unique
+  employeeId    String?  @unique
+  department    String?
+  qualifications String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courses       Course[]
+  assignments   Assignment[]
+  feedback      Feedback[]
+
+  @@map("teachers")
+}
+
+// College/Institution
+model College {
+  id              String   @id @default(uuid())
+  userId          String   @unique
+  name            String
+  type            String?
+  location        String?
+  establishedYear Int?
+  accreditation   String?
+  studentCount    Int?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  evaluations    CollegeEvaluation[]
+  courses         Course[]
+
+  @@map("colleges")
+}
+
+// Course
+model Course {
+  id            String   @id @default(uuid())
+  name          String
+  code          String?
+  description   String?
+  teacherId     String
+  collegeId     String?
+  semester      Int?
+  academicYear  String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  teacher       Teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  college       College? @relation(fields: [collegeId], references: [id], onDelete: SetNull)
+  enrollments   Enrollment[]
+  assignments   Assignment[]
+
+  @@map("courses")
+}
+
+// Enrollment (Student-Course relationship)
+model Enrollment {
+  id            String   @id @default(uuid())
+  studentId     String
+  courseId      String
+  enrollmentDate DateTime @default(now())
+  status        EnrollmentStatus @default(ACTIVE)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  student       Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  course        Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, courseId])
+  @@map("enrollments")
+}
+
+enum EnrollmentStatus {
+  ACTIVE
+  COMPLETED
+  DROPPED
+}
+
+// Assignment
+model Assignment {
+  id            String   @id @default(uuid())
+  title         String
+  description   String?
+  courseId      String
+  teacherId     String
+  dueDate       DateTime
+  maxScore      Float    @default(100)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  course        Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  teacher       Teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  submissions   AssignmentSubmission[]
+
+  @@map("assignments")
+}
+
+// Assignment Submission
+model AssignmentSubmission {
+  id            String   @id @default(uuid())
+  assignmentId  String
+  studentId     String
+  content       String?
+  fileUrl       String?
+  score         Float?
+  feedback      String?
+  submittedAt   DateTime?
+  gradedAt      DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  assignment    Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  student       Student    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([assignmentId, studentId])
+  @@map("assignment_submissions")
+}
+
+// Attendance
+model Attendance {
+  id            String   @id @default(uuid())
+  studentId     String
+  courseId      String
+  date          DateTime @db.Date
+  status        AttendanceStatus
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  student       Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, courseId, date])
+  @@map("attendances")
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  EXCUSED
+}
+
+// Feedback
+model Feedback {
+  id            String   @id @default(uuid())
+  teacherId     String
+  studentId     String
+  courseId      String?
+  content       String
+  type          FeedbackType @default(GENERAL)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  teacher       Teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  student       Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@map("feedbacks")
+}
+
+enum FeedbackType {
+  GENERAL
+  ASSIGNMENT
+  PERFORMANCE
+  ATTENDANCE
+}
+
+// College Evaluation
+model CollegeEvaluation {
+  id            String   @id @default(uuid())
+  collegeId     String
+  status        EvaluationStatus @default(PENDING)
+  overallScore  Float?
+  infrastructureScore Float?
+  facultyScore   Float?
+  accreditationScore Float?
+  recommendations Json?
+  analysisData   Json?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  completedAt   DateTime?
+
+  // Relations
+  college       College  @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+  documents     EvaluationDocument[]
+  photos        EvaluationPhoto[]
+
+  @@map("college_evaluations")
+}
+
+enum EvaluationStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+}
+
+// Evaluation Documents
+model EvaluationDocument {
+  id            String   @id @default(uuid())
+  evaluationId  String
+  type          DocumentType
+  fileName      String
+  fileUrl       String
+  fileSize      Int?
+  mimeType      String?
+  createdAt     DateTime @default(now())
+
+  // Relations
+  evaluation    CollegeEvaluation @relation(fields: [evaluationId], references: [id], onDelete: Cascade)
+
+  @@map("evaluation_documents")
+}
+
+enum DocumentType {
+  ACCREDITATION
+  FACULTY_CREDENTIALS
+  INFRASTRUCTURE_REPORT
+  ACADEMIC_RECORDS
+  OTHER
+}
+
+// Evaluation Photos
+model EvaluationPhoto {
+  id            String   @id @default(uuid())
+  evaluationId  String
+  category      PhotoCategory
+  fileName      String
+  fileUrl       String
+  fileSize      Int?
+  createdAt     DateTime @default(now())
+
+  // Relations
+  evaluation    CollegeEvaluation @relation(fields: [evaluationId], references: [id], onDelete: Cascade)
+
+  @@map("evaluation_photos")
+}
+
+enum PhotoCategory {
+  CLASSROOMS
+  LABORATORIES
+  LIBRARY
+  SPORTS
+  HOSTEL
+  CAMPUS
+}
+
+// AI Chat Sessions
+model AIChat {
+  id            String   @id @default(uuid())
+  userId        String
+  role          ChatRole
+  messages      Json     // Array of {role: 'user'|'assistant', content: string, timestamp: DateTime}
+  context       Json?    // Additional context for the AI
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("ai_chats")
+}
+
+enum ChatRole {
+  STUDENT_MENTOR
+  TEACHER_COACH
+}
+

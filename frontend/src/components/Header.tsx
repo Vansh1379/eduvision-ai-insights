@@ -1,9 +1,11 @@
 import React, { useState } from "react";
 import { Menu, X, Brain } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useUser, UserButton } from "@clerk/clerk-react";
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { isSignedIn, isLoaded } = useUser();
 
   return (
     <header className="bg-slate-900 text-white shadow-lg">
@@ -50,18 +52,34 @@ const Header = () => {
           </nav>
 
           <div className="hidden md:flex items-center space-x-4">
-            <Link
-              to="/login"
-              className="px-4 py-2 text-blue-400 border border-blue-400 rounded-lg hover:bg-blue-400 hover:text-white transition-colors"
-            >
-              Login
-            </Link>
-            <Link
-              to="/signup"
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Get Started
-            </Link>
+            {isLoaded && (
+              <>
+                {isSignedIn ? (
+                  <UserButton
+                    appearance={{
+                      elements: {
+                        avatarBox: "h-10 w-10",
+                      },
+                    }}
+                  />
+                ) : (
+                  <>
+                    <Link
+                      to="/login"
+                      className="px-4 py-2 text-blue-400 border border-blue-400 rounded-lg hover:bg-blue-400 hover:text-white transition-colors"
+                    >
+                      Login
+                    </Link>
+                    <Link
+                      to="/signup"
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                      Get Started
+                    </Link>
+                  </>
+                )}
+              </>
+            )}
           </div>
 
           <button
@@ -109,18 +127,36 @@ const Header = () => {
                 Contact
               </Link>
               <div className="flex flex-col space-y-2 pt-4">
-                <Link
-                  to="/login"
-                  className="px-4 py-2 text-blue-400 border border-blue-400 rounded-lg hover:bg-blue-400 hover:text-white transition-colors"
-                >
-                  Login
-                </Link>
-                <Link
-                  to="/signup"
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  Get Started
-                </Link>
+                {isLoaded && (
+                  <>
+                    {isSignedIn ? (
+                      <div className="flex items-center justify-center px-4 py-2">
+                        <UserButton
+                          appearance={{
+                            elements: {
+                              avatarBox: "h-10 w-10",
+                            },
+                          }}
+                        />
+                      </div>
+                    ) : (
+                      <>
+                        <Link
+                          to="/login"
+                          className="px-4 py-2 text-blue-400 border border-blue-400 rounded-lg hover:bg-blue-400 hover:text-white transition-colors text-center"
+                        >
+                          Login
+                        </Link>
+                        <Link
+                          to="/signup"
+                          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-center"
+                        >
+                          Get Started
+                        </Link>
+                      </>
+                    )}
+                  </>
+                )}
               </div>
             </nav>
           </div>

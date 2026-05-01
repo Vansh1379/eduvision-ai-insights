@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useState } from "react";
 import {
   CalendarCheck,
   Sparkles,
@@ -11,6 +11,7 @@ import {
   CheckCircle2,
   Bot,
   Send,
+  User,
 } from "lucide-react";
 import { UserButton, useUser } from "@clerk/clerk-react";
 import {
@@ -20,6 +21,7 @@ import {
 } from "@/components/ui/chart";
 import { CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts";
 import { cn } from "@/lib/utils";
+import { getFakeAiResponse } from "@/lib/fakeAi";
 
 const overviewCards = [
   {
@@ -191,54 +193,6 @@ const suggestedPrompts = [
 const StudentPortal = () => {
   const { user } = useUser();
   const firstName = user?.firstName || "Student";
-  const fullName =
-    user?.fullName || `${firstName} ${user?.lastName ?? ""}`.trim();
-  const geminiApiKey = import.meta.env.VITE_GEMINI_API_KEY;
-  const model = "gemini-1.5-flash-latest";
-
-  const studentContext = useMemo(() => {
-    const overviewSummary = overviewCards
-      .map((card) => `${card.title}: ${card.value} (${card.changeLabel})`)
-      .join("\n");
-    const courseSummary = courseProgress
-      .map(
-        (course) =>
-          `${course.course} | Completion: ${course.completion}% | Attendance: ${course.attendance}% | Next: ${course.upcoming} | Focus: ${course.focus}`
-      )
-      .join("\n");
-    const deadlinesSummary = upcomingDeadlines
-      .map((deadline) => `${deadline.course}: ${deadline.item} (${deadline.due})`)
-      .join("\n");
-    const feedbackSummary = teacherFeedback
-      .map(
-        (feedback) =>
-          `${feedback.teacher} on ${feedback.course}: ${feedback.message}`
-      )
-      .join("\n");
-
-    return `Student name: ${fullName || "Unnamed"}
-Attendance & performance metrics:
-${overviewSummary}
-
-Course progress details:
-${courseSummary}
-
-Upcoming deadlines:
-${deadlinesSummary}
-
-Recent faculty feedback:
-${feedbackSummary}`.trim();
-  }, [fullName]);
-
-  const systemPrompt = useMemo(
-    () =>
-      `You are EduVision AI Mentor, an educational coach who crafts personalized, motivating, and actionable guidance for students.
-Use the student-specific context below to ground every response. Provide clear next steps, reference exact scores or deadlines when helpful, and end with an encouraging takeaway.
-
-Student Context:
-${studentContext}`,
-    [studentContext]
-  );
 
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -251,59 +205,12 @@ ${studentContext}`,
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const sendToGemini = async (userMessage: string) => {
-    if (!geminiApiKey) {
-      throw new Error(
-        "Gemini API key is missing. Add VITE_GEMINI_API_KEY to your environment."
-      );
-    }
-
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiApiKey}`;
-
-    const historyPayload = messages.map((message) => ({
-      role: message.role === "assistant" ? "model" : "user",
-      parts: [{ text: message.content }],
-    }));
-
-    const requestBody = {
-      contents: [
-        {
-          role: "user",
-          parts: [{ text: systemPrompt }],
-        },
-        ...historyPayload,
-        {
-          role: "user",
-          parts: [
-            {
-              text: `Student question: ${userMessage}
-
-Remember to tailor your answer with the provided student context. If you reference metrics or deadlines, reiterate how the student can act on them.`,
-            },
-          ],
-        },
-      ],
-    };
-
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(requestBody),
-    });
-
-    if (!response.ok) {
-      const err = await response.text();
-      throw new Error(err || "Failed to generate AI response.");
-    }
-
-    const data = await response.json();
-    const text =
-      data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ||
-      "I couldn’t generate a response. Please try again.";
-
-    setMessages((prev) => [...prev, { role: "assistant", content: text }]);
+  const sendToMentor = async (userMessage: string) => {
+    await new Promise((resolve) => setTimeout(resolve, 700));
+    setMessages((prev) => [
+      ...prev,
+      { role: "assistant", content: getFakeAiResponse("student", userMessage) },
+    ]);
   };
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -317,7 +224,7 @@ Remember to tailor your answer with the provided student context. If you referen
     setLoading(true);
 
     try {
-      await sendToGemini(trimmed);
+      await sendToMentor(trimmed);
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Something went wrong.";
@@ -360,7 +267,8 @@ Remember to tailor your answer with the provided student context. If you referen
               <div className="text-right">
                 <p className="text-sm text-slate-200">Signed in as</p>
                 <p className="font-semibold">
-                  {user?.fullName || `${firstName} ${user?.lastName ?? ""}`.trim()}
+                  {user?.fullName ||
+                    `${firstName} ${user?.lastName ?? ""}`.trim()}
                 </p>
               </div>
               <UserButton afterSignOutUrl="/" showName={false} />
@@ -401,7 +309,9 @@ Remember to tailor your answer with the provided student context. If you referen
                 <p className="mt-2 text-3xl font-bold text-slate-900">
                   {card.value}
                 </p>
-                <p className="mt-2 text-sm text-slate-500">{card.changeLabel}</p>
+                <p className="mt-2 text-sm text-slate-500">
+                  {card.changeLabel}
+                </p>
               </div>
             );
           })}
@@ -469,9 +379,7 @@ Remember to tailor your answer with the provided student context. If you referen
               <div className="flex items-center gap-3">
                 <Target className="h-10 w-10 text-blue-600" />
                 <div>
-                  <h3 className="text-lg font-semibold">
-                    Weekly Success Plan
-                  </h3>
+                  <h3 className="text-lg font-semibold">Weekly Success Plan</h3>
                   <p className="text-sm text-slate-600">
                     AI-generated milestones tailored to your semester goals.
                   </p>
@@ -484,7 +392,8 @@ Remember to tailor your answer with the provided student context. If you referen
                 </li>
                 <li className="flex items-start gap-2">
                   <Clock className="mt-0.5 h-4 w-4 text-blue-500" />
-                  Attend peer study circle on Saturday for Educational Psychology.
+                  Attend peer study circle on Saturday for Educational
+                  Psychology.
                 </li>
                 <li className="flex items-start gap-2">
                   <Sparkles className="mt-0.5 h-4 w-4 text-blue-500" />
@@ -569,9 +478,7 @@ Remember to tailor your answer with the provided student context. If you referen
                       <h3 className="text-lg font-semibold text-slate-900">
                         {course.course}
                       </h3>
-                      <p className="text-sm text-slate-500">
-                        {course.faculty}
-                      </p>
+                      <p className="text-sm text-slate-500">{course.faculty}</p>
                     </div>
                     <span className="rounded-full bg-blue-50 px-3 py-1 text-sm font-medium text-blue-600">
                       Attendance {course.attendance}%
@@ -594,9 +501,7 @@ Remember to tailor your answer with the provided student context. If you referen
                       Next milestone:
                     </p>
                     <p>{course.upcoming}</p>
-                    <p className="mt-2 text-slate-500">
-                      Focus: {course.focus}
-                    </p>
+                    <p className="mt-2 text-slate-500">Focus: {course.focus}</p>
                   </div>
                 </div>
               ))}
@@ -612,41 +517,126 @@ Remember to tailor your answer with the provided student context. If you referen
                     Talk to EduVision AI
                   </h3>
                   <p className="text-sm text-slate-500">
-                    Get tailored strategies grounded in your attendance, grades, and feedback.
+                    Get tailored strategies grounded in your attendance, grades,
+                    and feedback.
                   </p>
                 </div>
               </div>
 
-              {!geminiApiKey && (
-                <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-700">
-                  Gemini API key missing. Add{" "}
-                  <code className="rounded bg-amber-100 px-1 py-0.5 text-xs">
-                    VITE_GEMINI_API_KEY
-                  </code>{" "}
-                  to your environment to enable AI coaching.
-                </div>
-              )}
-
-              <div className="mt-5 space-y-4">
-                <div className="space-y-3">
+              <div className="mt-5">
+                <div className="max-h-[500px] space-y-4 overflow-y-auto rounded-xl border border-slate-200 bg-slate-50/50 p-4">
                   {messages.map((message, index) => (
                     <div
                       key={`${message.role}-${index}`}
                       className={cn(
-                        "rounded-2xl border p-4 text-sm leading-relaxed shadow-sm",
-                        message.role === "assistant"
-                          ? "border-purple-100 bg-purple-50 text-slate-700"
-                          : "ml-auto w-fit max-w-xl border-blue-100 bg-blue-50 text-slate-700"
+                        "flex items-start gap-3",
+                        message.role === "user" && "flex-row-reverse"
                       )}
                     >
-                      {message.content}
+                      {/* Avatar */}
+                      <div
+                        className={cn(
+                          "flex h-8 w-8 shrink-0 items-center justify-center rounded-full shadow-sm",
+                          message.role === "assistant"
+                            ? "bg-gradient-to-br from-purple-500 to-purple-600"
+                            : "bg-gradient-to-br from-blue-500 to-blue-600"
+                        )}
+                      >
+                        {message.role === "assistant" ? (
+                          <Bot className="h-4 w-4 text-white" />
+                        ) : (
+                          <User className="h-4 w-4 text-white" />
+                        )}
+                      </div>
+
+                      {/* Message Bubble */}
+                      <div
+                        className={cn(
+                          "group relative max-w-[85%] rounded-2xl px-5 py-3 shadow-sm transition-all",
+                          message.role === "assistant"
+                            ? "rounded-tl-sm bg-white border border-slate-200 text-slate-800"
+                            : "rounded-tr-sm bg-gradient-to-br from-blue-500 to-blue-600 text-white"
+                        )}
+                      >
+                        {/* Message Content with better formatting */}
+                        <div
+                          className={cn(
+                            "prose prose-sm max-w-none",
+                            message.role === "assistant"
+                              ? "prose-slate"
+                              : "prose-invert prose-headings:text-white prose-p:text-white/90 prose-strong:text-white"
+                          )}
+                        >
+                          <p className="whitespace-pre-wrap break-words leading-relaxed">
+                            {message.content.split("\n").map((line, i, arr) => {
+                              // Handle bullet points
+                              if (
+                                line.trim().startsWith("- ") ||
+                                line.trim().startsWith("• ")
+                              ) {
+                                return (
+                                  <span key={i} className="block pl-4">
+                                    <span className="mr-2">•</span>
+                                    {line.replace(/^[-•]\s*/, "")}
+                                  </span>
+                                );
+                              }
+                              // Handle numbered lists
+                              if (/^\d+\.\s/.test(line.trim())) {
+                                return (
+                                  <span key={i} className="block pl-4">
+                                    {line}
+                                  </span>
+                                );
+                              }
+                              // Regular line
+                              return (
+                                <span key={i}>
+                                  {line || "\u00A0"}
+                                  {i < arr.length - 1 && <br />}
+                                </span>
+                              );
+                            })}
+                          </p>
+                        </div>
+
+                        {/* Decorative gradient overlay for assistant messages */}
+                        {message.role === "assistant" && (
+                          <div className="absolute inset-0 -z-10 rounded-2xl bg-gradient-to-br from-purple-50/50 to-blue-50/30 opacity-0 transition-opacity group-hover:opacity-100" />
+                        )}
+                      </div>
                     </div>
                   ))}
+
+                  {loading && (
+                    <div className="flex items-start gap-3">
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-purple-500 to-purple-600 shadow-sm">
+                        <Bot className="h-4 w-4 text-white" />
+                      </div>
+                      <div className="rounded-2xl rounded-tl-sm bg-white border border-slate-200 px-5 py-3 shadow-sm">
+                        <div className="flex gap-1">
+                          <div className="h-2 w-2 animate-bounce rounded-full bg-purple-500 [animation-delay:-0.3s]" />
+                          <div className="h-2 w-2 animate-bounce rounded-full bg-purple-500 [animation-delay:-0.15s]" />
+                          <div className="h-2 w-2 animate-bounce rounded-full bg-purple-500" />
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {error && (
-                  <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-600">
-                    {error}
+                  <div className="mt-4 flex items-start gap-3 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700 shadow-sm">
+                    <div className="mt-0.5 h-5 w-5 shrink-0 rounded-full bg-rose-200 flex items-center justify-center">
+                      <span className="text-xs font-bold">!</span>
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-medium">Error</p>
+                      <p className="mt-1 text-xs text-rose-600 break-words">
+                        {error.length > 200
+                          ? `${error.substring(0, 200)}...`
+                          : error}
+                      </p>
+                    </div>
                   </div>
                 )}
 
@@ -664,14 +654,12 @@ Remember to tailor your answer with the provided student context. If you referen
                     className="flex-1 rounded-xl border border-slate-200 px-4 py-3 text-sm shadow-inner focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-200"
                     value={question}
                     onChange={(event) => setQuestion(event.target.value)}
-                    disabled={!geminiApiKey || loading}
+                    disabled={loading}
                   />
                   <button
                     type="submit"
                     className="flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white shadow transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400"
-                    disabled={
-                      !geminiApiKey || loading || question.trim().length === 0
-                    }
+                    disabled={loading || question.trim().length === 0}
                   >
                     {loading ? (
                       "Thinking..."
@@ -691,7 +679,7 @@ Remember to tailor your answer with the provided student context. If you referen
                       type="button"
                       onClick={() => handlePromptClick(prompt)}
                       className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600"
-                      disabled={!geminiApiKey || loading}
+                      disabled={loading}
                     >
                       {prompt}
                     </button>
@@ -699,9 +687,8 @@ Remember to tailor your answer with the provided student context. If you referen
                 </div>
 
                 <p className="text-xs text-slate-400">
-                  EduVision AI keeps your data private. Answers are generated
-                  from your latest attendance, progress, and feedback
-                  information.
+                  Demo mode: EduVision AI responses are generated from
+                  preloaded attendance, progress, and feedback rules.
                 </p>
               </div>
             </div>
@@ -772,4 +759,3 @@ Remember to tailor your answer with the provided student context. If you referen
 };
 
 export default StudentPortal;
-

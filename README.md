@@ -1,73 +1,134 @@
-# Welcome to your Lovable project
+# EduVision AI Insights
 
-## Project info
+A comprehensive educational platform with AI-powered insights for students, teachers, and colleges.
 
-**URL**: https://lovable.dev/projects/4d82c10c-4167-45a6-bbad-762b5976a5c5
+## Project Structure
 
-## How can I edit this code?
+```
+eduvision-ai-insights/
+├── frontend/          # React + TypeScript frontend
+├── backend/           # Node.js + Express + Prisma backend
+└── README.md
+```
 
-There are several ways of editing your application.
+## Features
 
-**Use Lovable**
+- 🎓 **Student Portal**: Track attendance, assignments, and get AI-powered study recommendations
+- 👨‍🏫 **Teacher Portal**: Monitor class performance, provide feedback, and get teaching insights
+- 🏫 **College Evaluation**: AI-powered analysis of infrastructure, faculty, and accreditation
+- 🤖 **AI Integration**: Gemini-powered chat assistants for personalized guidance
+- 📊 **Analytics**: Comprehensive dashboards and performance tracking
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/4d82c10c-4167-45a6-bbad-762b5976a5c5) and start prompting.
+## Tech Stack
 
-Changes made via Lovable will be committed automatically to this repo.
+### Frontend
+- React 18
+- TypeScript
+- Vite
+- Tailwind CSS
+- Shadcn UI
+- Clerk (Authentication)
+- React Query
+- React Router
 
-**Use your preferred IDE**
+### Backend
+- Node.js
+- Express
+- TypeScript
+- Prisma ORM
+- PostgreSQL
+- Clerk SDK
+- Gemini API
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+## Getting Started
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### Prerequisites
 
-Follow these steps:
+- Node.js 18+
+- PostgreSQL 14+
+- Clerk account
+- Gemini API key
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+### Frontend Setup
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+```bash
+cd frontend
+npm install
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+Frontend will run on `http://localhost:5173`
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+### Backend Setup
 
-**Use GitHub Codespaces**
+```bash
+cd backend
+npm install
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+# Copy environment file
+cp .env.example .env
 
-## What technologies are used for this project?
+# Edit .env and add your:
+# - DATABASE_URL
+# - CLERK_SECRET_KEY
+# - GEMINI_API_KEY
 
-This project is built with:
+# Setup database
+npm run prisma:generate
+npm run prisma:migrate
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+# Start server
+npm run dev
+```
 
-## How can I deploy this project?
+Backend will run on `http://localhost:3001`
 
-Simply open [Lovable](https://lovable.dev/projects/4d82c10c-4167-45a6-bbad-762b5976a5c5) and click on Share -> Publish.
+## Environment Variables
 
-## Can I connect a custom domain to my Lovable project?
+### Frontend (.env)
+```
+VITE_CLERK_PUBLISHABLE_KEY=pk_test_...
+VITE_GEMINI_API_KEY=your_gemini_key
+VITE_API_URL=http://localhost:3001
+```
 
-Yes, you can!
+### Backend (.env)
+```
+PORT=3001
+DATABASE_URL=postgresql://user:password@localhost:5432/eduvision
+CLERK_SECRET_KEY=sk_test_...
+GEMINI_API_KEY=your_gemini_key
+FRONTEND_URL=http://localhost:5173
+```
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+## API Documentation
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+See [backend/README.md](./backend/README.md) for detailed API documentation.
+
+## Development
+
+### Running Both Frontend and Backend
+
+Open two terminal windows:
+
+**Terminal 1 (Frontend):**
+```bash
+cd frontend
+npm run dev
+```
+
+**Terminal 2 (Backend):**
+```bash
+cd backend
+npm run dev
+```
+
+## Project Status
+
+✅ Frontend: Complete  
+✅ Backend: Complete  
+🔄 Integration: In Progress
+
+## License
+
+ISC

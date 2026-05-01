@@ -13,6 +13,7 @@ import {
   Trophy,
   ClipboardList,
   TimerReset,
+  User,
 } from "lucide-react";
 import { UserButton, useUser } from "@clerk/clerk-react";
 import {
@@ -193,7 +194,7 @@ const TeacherPortal = () => {
   const fullName =
     user?.fullName || `${firstName} ${user?.lastName ?? ""}`.trim();
   const geminiApiKey = import.meta.env.VITE_GEMINI_API_KEY;
-  const model = "gemini-1.5-flash-latest";
+  const model = "gemini-2.5-flash";
 
   const teacherContext = useMemo(() => {
     const metricsSummary = classMetrics
@@ -367,7 +368,8 @@ Respond with specific recommendations that align to the provided metrics and obj
               <div className="text-right">
                 <p className="text-sm text-slate-200">Signed in as</p>
                 <p className="font-semibold">
-                  {user?.fullName || `${firstName} ${user?.lastName ?? ""}`.trim()}
+                  {user?.fullName ||
+                    `${firstName} ${user?.lastName ?? ""}`.trim()}
                 </p>
               </div>
               <UserButton afterSignOutUrl="/" showName={false} />
@@ -607,26 +609,120 @@ Respond with specific recommendations that align to the provided metrics and obj
               </div>
             )}
 
-            <div className="mt-4 space-y-3 text-sm text-slate-600">
-              <div className="space-y-3">
+            <div className="mt-4">
+              <div className="max-h-[500px] space-y-4 overflow-y-auto rounded-xl border border-slate-200 bg-slate-50/50 p-4">
                 {messages.map((message, index) => (
                   <div
                     key={`${message.role}-${index}`}
                     className={cn(
-                      "rounded-2xl border p-4 text-sm leading-relaxed shadow-sm",
-                      message.role === "assistant"
-                        ? "border-purple-100 bg-purple-50 text-slate-700"
-                        : "ml-auto w-fit max-w-xl border-blue-100 bg-blue-50 text-slate-700"
+                      "flex items-start gap-3",
+                      message.role === "user" && "flex-row-reverse"
                     )}
                   >
-                    {message.content}
+                    {/* Avatar */}
+                    <div
+                      className={cn(
+                        "flex h-8 w-8 shrink-0 items-center justify-center rounded-full shadow-sm",
+                        message.role === "assistant"
+                          ? "bg-gradient-to-br from-purple-500 to-purple-600"
+                          : "bg-gradient-to-br from-blue-500 to-blue-600"
+                      )}
+                    >
+                      {message.role === "assistant" ? (
+                        <Bot className="h-4 w-4 text-white" />
+                      ) : (
+                        <User className="h-4 w-4 text-white" />
+                      )}
+                    </div>
+
+                    {/* Message Bubble */}
+                    <div
+                      className={cn(
+                        "group relative max-w-[85%] rounded-2xl px-5 py-3 shadow-sm transition-all",
+                        message.role === "assistant"
+                          ? "rounded-tl-sm bg-white border border-slate-200 text-slate-800"
+                          : "rounded-tr-sm bg-gradient-to-br from-blue-500 to-blue-600 text-white"
+                      )}
+                    >
+                      {/* Message Content with better formatting */}
+                      <div
+                        className={cn(
+                          "prose prose-sm max-w-none",
+                          message.role === "assistant"
+                            ? "prose-slate"
+                            : "prose-invert prose-headings:text-white prose-p:text-white/90 prose-strong:text-white"
+                        )}
+                      >
+                        <p className="whitespace-pre-wrap break-words leading-relaxed">
+                          {message.content.split("\n").map((line, i, arr) => {
+                            // Handle bullet points
+                            if (
+                              line.trim().startsWith("- ") ||
+                              line.trim().startsWith("• ")
+                            ) {
+                              return (
+                                <span key={i} className="block pl-4">
+                                  <span className="mr-2">•</span>
+                                  {line.replace(/^[-•]\s*/, "")}
+                                </span>
+                              );
+                            }
+                            // Handle numbered lists
+                            if (/^\d+\.\s/.test(line.trim())) {
+                              return (
+                                <span key={i} className="block pl-4">
+                                  {line}
+                                </span>
+                              );
+                            }
+                            // Regular line
+                            return (
+                              <span key={i}>
+                                {line || "\u00A0"}
+                                {i < arr.length - 1 && <br />}
+                              </span>
+                            );
+                          })}
+                        </p>
+                      </div>
+
+                      {/* Decorative gradient overlay for assistant messages */}
+                      {message.role === "assistant" && (
+                        <div className="absolute inset-0 -z-10 rounded-2xl bg-gradient-to-br from-purple-50/50 to-blue-50/30 opacity-0 transition-opacity group-hover:opacity-100" />
+                      )}
+                    </div>
                   </div>
                 ))}
+
+                {loading && (
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-purple-500 to-purple-600 shadow-sm">
+                      <Bot className="h-4 w-4 text-white" />
+                    </div>
+                    <div className="rounded-2xl rounded-tl-sm bg-white border border-slate-200 px-5 py-3 shadow-sm">
+                      <div className="flex gap-1">
+                        <div className="h-2 w-2 animate-bounce rounded-full bg-purple-500 [animation-delay:-0.3s]" />
+                        <div className="h-2 w-2 animate-bounce rounded-full bg-purple-500 [animation-delay:-0.15s]" />
+                        <div className="h-2 w-2 animate-bounce rounded-full bg-purple-500" />
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {error && (
-                <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-600">
-                  {error}
+                <div className="mt-4 flex items-start gap-3 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700 shadow-sm">
+                  <div className="mt-0.5 h-5 w-5 shrink-0 rounded-full bg-rose-200 flex items-center justify-center">
+                    <span className="text-xs font-bold">!</span>
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-medium">Error</p>
+                    <p className="mt-1 text-xs text-rose-600 break-words">
+                      {error.length > 200
+                        ? `${error.substring(0, 200)}...`
+                        : error}
+                    </p>
+                  </div>
                 </div>
               )}
 
@@ -715,4 +811,3 @@ Respond with specific recommendations that align to the provided metrics and obj
 };
 
 export default TeacherPortal;
-
