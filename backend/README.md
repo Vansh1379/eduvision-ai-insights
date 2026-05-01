@@ -9,7 +9,7 @@ Backend API for EduVision AI Insights platform built with Node.js, Express, Pris
 - 🏫 College Evaluation System
 - 📝 Course & Assignment Management
 - 📅 Attendance Tracking
-- 💬 AI Chat Integration (Gemini)
+- 💬 AI Chat Demo with deterministic rule-based responses
 - 📁 File Upload Support
 
 ## Prerequisites
@@ -17,7 +17,6 @@ Backend API for EduVision AI Insights platform built with Node.js, Express, Pris
 - Node.js 18+
 - PostgreSQL 14+
 - Clerk account (for authentication)
-- Gemini API key (for AI features)
 
 ## Setup
 
@@ -37,7 +36,6 @@ Backend API for EduVision AI Insights platform built with Node.js, Express, Pris
 
    - `DATABASE_URL` - PostgreSQL connection string
    - `CLERK_SECRET_KEY` - Your Clerk secret key
-   - `GEMINI_API_KEY` - Your Gemini API key
    - `FRONTEND_URL` - Frontend URL (default: http://localhost:5173)
 
 3. **Set up database:**
@@ -112,7 +110,7 @@ Backend API for EduVision AI Insights platform built with Node.js, Express, Pris
 - `GET /api/ai-chat/session` - Get or create chat session
 - `POST /api/ai-chat/session/:id/message` - Add message
 - `GET /api/ai-chat/session/:id` - Get chat history
-- `POST /api/ai-chat/gemini` - Proxy for Gemini API
+- `POST /api/ai-chat/gemini` - Demo AI response endpoint
 
 ## Database Schema
 

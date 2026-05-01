@@ -17,6 +17,7 @@ import {
   Download,
 } from "lucide-react";
 import Header from "@/components/Header";
+import { getFakeCollegeEvaluation } from "@/lib/fakeAi";
 
 export const CollegeEvaluation = () => {
   const [currentStep, setCurrentStep] = useState(1);
@@ -31,6 +32,9 @@ export const CollegeEvaluation = () => {
     accreditation: "",
     studentCount: "",
   });
+  const [analysisResults, setAnalysisResults] = useState(() =>
+    getFakeCollegeEvaluation({})
+  );
 
   const steps = [
     { id: 1, title: "College Information", icon: FileText },
@@ -139,25 +143,28 @@ export const CollegeEvaluation = () => {
 
   const startAnalysis = () => {
     setIsAnalyzing(true);
-    // Simulate AI analysis
     setTimeout(() => {
+      setAnalysisResults(getFakeCollegeEvaluation(collegeInfo));
       setIsAnalyzing(false);
       setAnalysisComplete(true);
       setCurrentStep(5);
-    }, 5000);
+    }, 1800);
   };
 
-  const mockResults = {
-    overallScore: 8.7,
-    infrastructure: { score: 8.5, status: "Excellent" },
-    faculty: { score: 9.2, status: "Outstanding" },
-    accreditation: { score: 8.8, status: "Very Good" },
-    recommendations: [
-      "Upgrade computer lab equipment in the CS department",
-      "Expand library digital resources collection",
-      "Improve hostel recreational facilities",
-      "Enhance classroom audio-visual systems",
-    ],
+  const resetEvaluation = () => {
+    setCurrentStep(1);
+    setUploadedFiles({});
+    setIsAnalyzing(false);
+    setAnalysisComplete(false);
+    setCollegeInfo({
+      name: "",
+      type: "",
+      location: "",
+      establishedYear: "",
+      accreditation: "",
+      studentCount: "",
+    });
+    setAnalysisResults(getFakeCollegeEvaluation({}));
   };
 
   const StepIndicator = () => (
@@ -488,7 +495,7 @@ export const CollegeEvaluation = () => {
                     Ready for Analysis
                   </h3>
                   <p className="text-slate-600 mb-4">
-                    Our AI will analyze your documents and photos to provide
+                    EduVision will analyze your documents and photos to provide
                     comprehensive insights about your college infrastructure,
                     faculty qualifications, and educational standards.
                   </p>
@@ -511,8 +518,8 @@ export const CollegeEvaluation = () => {
                     Analysis in Progress
                   </h3>
                   <p className="text-slate-600">
-                    Our AI is analyzing your documents and photos. This may take
-                    a few minutes...
+                    EduVision is reviewing the submitted details and generating
+                    a structured institutional scorecard.
                   </p>
                   <div className="mt-4 bg-gray-200 rounded-full h-2">
                     <div
@@ -536,9 +543,13 @@ export const CollegeEvaluation = () => {
             <div className="bg-gradient-to-r from-green-500 to-blue-500 text-white rounded-xl p-6 text-center">
               <h3 className="text-2xl font-bold mb-2">Overall Score</h3>
               <div className="text-5xl font-bold mb-2">
-                {mockResults.overallScore}/10
+                {analysisResults.overallScore}/10
               </div>
-              <p className="text-lg">Excellent Performance</p>
+              <p className="text-lg">
+                {analysisResults.overallScore >= 8.5
+                  ? "Excellent Performance"
+                  : "Strong Performance"}
+              </p>
             </div>
 
             <div className="grid md:grid-cols-3 gap-6">
@@ -548,10 +559,10 @@ export const CollegeEvaluation = () => {
                   Infrastructure
                 </h3>
                 <div className="text-2xl font-bold text-blue-600 mb-1">
-                  {mockResults.infrastructure.score}/10
+                  {analysisResults.infrastructure.score}/10
                 </div>
                 <p className="text-slate-600">
-                  {mockResults.infrastructure.status}
+                  {analysisResults.infrastructure.status}
                 </p>
               </div>
 
@@ -561,9 +572,11 @@ export const CollegeEvaluation = () => {
                   Faculty
                 </h3>
                 <div className="text-2xl font-bold text-purple-600 mb-1">
-                  {mockResults.faculty.score}/10
+                  {analysisResults.faculty.score}/10
                 </div>
-                <p className="text-slate-600">{mockResults.faculty.status}</p>
+                <p className="text-slate-600">
+                  {analysisResults.faculty.status}
+                </p>
               </div>
 
               <div className="bg-white border border-slate-200 rounded-xl p-6">
@@ -572,10 +585,10 @@ export const CollegeEvaluation = () => {
                   Accreditation
                 </h3>
                 <div className="text-2xl font-bold text-green-600 mb-1">
-                  {mockResults.accreditation.score}/10
+                  {analysisResults.accreditation.score}/10
                 </div>
                 <p className="text-slate-600">
-                  {mockResults.accreditation.status}
+                  {analysisResults.accreditation.status}
                 </p>
               </div>
             </div>
@@ -585,7 +598,7 @@ export const CollegeEvaluation = () => {
                 Improvement Recommendations
               </h3>
               <div className="space-y-3">
-                {mockResults.recommendations.map((rec, index) => (
+                {analysisResults.recommendations.map((rec, index) => (
                   <div key={index} className="flex items-start space-x-3">
                     <AlertCircle className="h-5 w-5 text-yellow-500 mt-0.5 flex-shrink-0" />
                     <p className="text-slate-700">{rec}</p>
@@ -595,7 +608,10 @@ export const CollegeEvaluation = () => {
             </div>
 
             <div className="flex justify-center space-x-4">
-              <button className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2">
+              <button
+                onClick={() => window.print()}
+                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
+              >
                 <Download size={20} />
                 <span>Download Report</span>
               </button>
@@ -655,7 +671,10 @@ export const CollegeEvaluation = () => {
             )}
 
             {currentStep === 5 && (
-              <button className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+              <button
+                onClick={resetEvaluation}
+                className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+              >
                 Start New Evaluation
               </button>
             )}

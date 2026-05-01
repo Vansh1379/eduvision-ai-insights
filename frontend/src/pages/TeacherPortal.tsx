@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useState } from "react";
 import {
   Users,
   BookMarked,
@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/chart";
 import { Bar, BarChart, CartesianGrid, Legend, XAxis, YAxis } from "recharts";
 import { cn } from "@/lib/utils";
+import { getFakeAiResponse } from "@/lib/fakeAi";
 
 const classMetrics = [
   {
@@ -191,62 +192,6 @@ const scheduleGlance = [
 const TeacherPortal = () => {
   const { user } = useUser();
   const firstName = user?.firstName || "Teacher";
-  const fullName =
-    user?.fullName || `${firstName} ${user?.lastName ?? ""}`.trim();
-  const geminiApiKey = import.meta.env.VITE_GEMINI_API_KEY;
-  const model = "gemini-2.5-flash";
-
-  const teacherContext = useMemo(() => {
-    const metricsSummary = classMetrics
-      .map((metric) => `${metric.title}: ${metric.value} (${metric.label})`)
-      .join("\n");
-    const engagementSummary = engagementData
-      .map(
-        (course) =>
-          `${course.course} | Attendance: ${course.attendance}% | Assignments: ${course.assignments}% | Satisfaction: ${course.satisfaction}`
-      )
-      .join("\n");
-    const highlightsSummary = studentHighlights
-      .map(
-        (highlight) =>
-          `${highlight.name} (${highlight.course}): ${highlight.progress}. Action: ${highlight.action}`
-      )
-      .join("\n");
-    const feedbackSummary = feedbackStream
-      .map(
-        (feedback) =>
-          `${feedback.author} (${feedback.sentiment}): ${feedback.content}`
-      )
-      .join("\n");
-    const goalsSummary = teacherGoals
-      .map((goal) => `${goal.title} - ${goal.status}: ${goal.detail}`)
-      .join("\n");
-
-    return `Teacher name: ${fullName || "Unnamed"}
-Key metrics:
-${metricsSummary}
-
-Class engagement data:
-${engagementSummary}
-
-Student highlights:
-${highlightsSummary}
-
-Recent feedback and insights:
-${feedbackSummary}
-
-Current growth objectives:
-${goalsSummary}`.trim();
-  }, [fullName]);
-
-  const systemPrompt = useMemo(
-    () =>
-      `You are EduVision AI Coach, an insightful assistant for educators. Craft responses that reference classroom analytics, student highlights, and goals provided in the context. Offer actionable strategies, tie them to concrete metrics when possible, and conclude with an uplifting suggestion.
-
-Teacher Context:
-${teacherContext}`,
-    [teacherContext]
-  );
 
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -259,59 +204,12 @@ ${teacherContext}`,
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const sendToGemini = async (userMessage: string) => {
-    if (!geminiApiKey) {
-      throw new Error(
-        "Gemini API key is missing. Add VITE_GEMINI_API_KEY to your environment."
-      );
-    }
-
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiApiKey}`;
-
-    const historyPayload = messages.map((message) => ({
-      role: message.role === "assistant" ? "model" : "user",
-      parts: [{ text: message.content }],
-    }));
-
-    const requestBody = {
-      contents: [
-        {
-          role: "user",
-          parts: [{ text: systemPrompt }],
-        },
-        ...historyPayload,
-        {
-          role: "user",
-          parts: [
-            {
-              text: `Teacher question: ${userMessage}
-
-Respond with specific recommendations that align to the provided metrics and objectives. Always suggest a concrete next step.`,
-            },
-          ],
-        },
-      ],
-    };
-
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(requestBody),
-    });
-
-    if (!response.ok) {
-      const err = await response.text();
-      throw new Error(err || "Failed to generate AI response.");
-    }
-
-    const data = await response.json();
-    const text =
-      data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ||
-      "I couldn’t generate a response. Please try again.";
-
-    setMessages((prev) => [...prev, { role: "assistant", content: text }]);
+  const sendToCoach = async (userMessage: string) => {
+    await new Promise((resolve) => setTimeout(resolve, 700));
+    setMessages((prev) => [
+      ...prev,
+      { role: "assistant", content: getFakeAiResponse("teacher", userMessage) },
+    ]);
   };
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -325,7 +223,7 @@ Respond with specific recommendations that align to the provided metrics and obj
     setLoading(true);
 
     try {
-      await sendToGemini(trimmed);
+      await sendToCoach(trimmed);
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Something went wrong.";
@@ -599,16 +497,6 @@ Respond with specific recommendations that align to the provided metrics and obj
               highlights.
             </p>
 
-            {!geminiApiKey && (
-              <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-700">
-                Gemini API key missing. Add{" "}
-                <code className="rounded bg-amber-100 px-1 py-0.5 text-xs">
-                  VITE_GEMINI_API_KEY
-                </code>{" "}
-                to your environment to enable AI coaching.
-              </div>
-            )}
-
             <div className="mt-4">
               <div className="max-h-[500px] space-y-4 overflow-y-auto rounded-xl border border-slate-200 bg-slate-50/50 p-4">
                 {messages.map((message, index) => (
@@ -740,14 +628,12 @@ Respond with specific recommendations that align to the provided metrics and obj
                   className="flex-1 rounded-xl border border-slate-200 px-4 py-3 text-sm shadow-inner focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-200"
                   value={question}
                   onChange={(event) => setQuestion(event.target.value)}
-                  disabled={!geminiApiKey || loading}
+                  disabled={loading}
                 />
                 <button
                   type="submit"
                   className="flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white shadow transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400"
-                  disabled={
-                    !geminiApiKey || loading || question.trim().length === 0
-                  }
+                  disabled={loading || question.trim().length === 0}
                 >
                   {loading ? (
                     "Coaching..."
@@ -767,7 +653,7 @@ Respond with specific recommendations that align to the provided metrics and obj
                     type="button"
                     onClick={() => handlePromptClick(prompt)}
                     className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:border-purple-200 hover:bg-purple-50 hover:text-purple-600"
-                    disabled={!geminiApiKey || loading}
+                    disabled={loading}
                   >
                     {prompt}
                   </button>
@@ -775,8 +661,8 @@ Respond with specific recommendations that align to the provided metrics and obj
               </div>
 
               <p className="text-xs text-slate-400">
-                EduVision AI uses your latest metrics and goals. Responses stay
-                private to your account.
+                Demo mode: EduVision AI responses are generated from preloaded
+                class analytics, goals, and student-highlight rules.
               </p>
             </div>
 

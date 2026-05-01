@@ -29,7 +29,7 @@ export const authMiddleware = async (
     const token = authHeader.split(' ')[1];
 
     // Verify the token with Clerk
-    const session = await clerkClient.sessions.verifySession(token);
+    const session = await (clerkClient.sessions as any).verifySession(token);
 
     if (!session) {
       return res.status(401).json({ error: 'Invalid or expired token' });
@@ -67,4 +67,3 @@ export const authMiddleware = async (
     return res.status(401).json({ error: 'Authentication failed' });
   }
 };
-

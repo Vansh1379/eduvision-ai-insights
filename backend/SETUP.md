@@ -15,7 +15,6 @@
    Edit `.env` and configure:
    - `DATABASE_URL` - PostgreSQL connection string
    - `CLERK_SECRET_KEY` - From Clerk Dashboard > API Keys
-   - `GEMINI_API_KEY` - From Google AI Studio
    - `FRONTEND_URL` - Your frontend URL (default: http://localhost:5173)
 
 3. **Initialize database:**
@@ -71,11 +70,10 @@ postgresql://postgres:mypassword@localhost:5432/eduvision?schema=public
 4. Copy the **Secret Key** (starts with `sk_test_` or `sk_live_`)
 5. Add it to your `.env` file as `CLERK_SECRET_KEY`
 
-## Gemini API Setup
+## AI Demo Mode
 
-1. Go to [Google AI Studio](https://makersuite.google.com/app/apikey)
-2. Create a new API key
-3. Add it to your `.env` file as `GEMINI_API_KEY`
+The `/api/ai-chat/gemini` route returns deterministic rule-based responses for
+the project demo. No external AI API key is required.
 
 ## Testing the API
 
@@ -153,4 +151,3 @@ Uploaded files are stored in the `uploads/` directory. Make sure:
 - The directory exists and is writable
 - Configure `MAX_FILE_SIZE` in `.env` (default: 10MB)
 - For production, consider using cloud storage (S3, Cloudinary, etc.)
-
